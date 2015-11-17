@@ -1,0 +1,31 @@
+{
+	"ImportPath": "github.com/dominikschulz/es-maint-index",
+	"GoVersion": "go1.5",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.8.6-9-g27b713c",
+			"Rev": "27b713cfd2742876645e3692a488c5e3fd65361d"
+		},
+		{
+			"ImportPath": "github.com/alexflint/go-arg",
+			"Rev": "518564234843a9512210eb34d8900bb5d12b7c4c"
+		},
+		{
+			"ImportPath": "github.com/cenkalti/backoff",
+			"Rev": "4dc77674aceaabba2c7e3da25d4c823edfb73f99"
+		},
+		{
+			"ImportPath": "github.com/danryan/env",
+			"Rev": "bc567f4d372a17eb756004cdbfd8458ecc04b07e"
+		},
+		{
+			"ImportPath": "gopkg.in/olivere/elastic.v2",
+			"Comment": "v2.0.19",
+			"Rev": "eb2ba0d1b663a6c5be75be71c23262f2ff6989be"
+		}
+	]
+}
