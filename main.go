@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -9,11 +10,14 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cenkalti/backoff"
+	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/olivere/elastic.v2"
 
 	"github.com/alexflint/go-arg"
 	"github.com/danryan/env"
 )
+
+var deleted prometheus.Counter
 
 type Config struct {
 	Host      string `env:"key=HOST default=localhost:9200" arg:"--host"`
@@ -60,9 +64,10 @@ func remove(c *Config) error {
 		_, err := client.DeleteIndex(iname).Do()
 		if err != nil {
 			log.Printf("Failed to delete index %s: %s", iname, err)
-		} else {
-			log.Printf("Deleted index %s", iname)
+			continue
 		}
+		log.Printf("Deleted index %s", iname)
+		deleted.Inc()
 	}
 	return nil
 }
@@ -70,10 +75,38 @@ func remove(c *Config) error {
 func main() {
 	cfg, err := New()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error: %s", err)
 	}
+
+	runs := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "elasticsearch_index_maint_runs_total",
+			Help: "Number of elasticsearch index maintenance runs",
+		},
+		[]string{"status"},
+	)
+	runs = prometheus.MustRegisterOrGet(runs).(*prometheus.CounterVec)
+	deleted = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "elasticsearch_indices_deleted_total",
+			Help: "Size of elasticsearch indices deleted",
+		},
+	)
+	deleted = prometheus.MustRegisterOrGet(deleted).(prometheus.Counter)
+	duration := prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "elasticsearch_index_maint_duration",
+			Help: "Duration of elasticsearch index maintenance runs",
+		},
+		[]string{"operation"},
+	)
+	duration = prometheus.MustRegisterOrGet(duration).(*prometheus.SummaryVec)
+
+	go listen()
+
 	interval := time.Hour * time.Duration(cfg.Interval)
 	for {
+		t0 := time.Now()
 		opFunc := func() error {
 			return remove(cfg)
 		}
@@ -86,9 +119,13 @@ func main() {
 		bo.MaxElapsedTime = 15 * time.Minute
 		err := backoff.RetryNotify(opFunc, bo, logFunc)
 		if err != nil {
+			runs.WithLabelValues("failed").Inc()
 			log.Printf("Failed to delete indices: %s", err)
 			continue
 		}
+		runs.WithLabelValues("ok").Inc()
+		d0 := float64(time.Since(t0)) / float64(time.Microsecond)
+		duration.WithLabelValues("delete").Observe(d0)
 		if interval < time.Second {
 			break
 		}
@@ -96,4 +133,27 @@ func main() {
 		time.Sleep(interval)
 	}
 	os.Exit(0)
+}
+
+func listen() {
+	listen := os.Getenv("LISTEN")
+	if listen == "" {
+		listen = ":8080"
+	}
+	s := &http.Server{
+		Addr:    listen,
+		Handler: requestHandler(),
+	}
+	log.Printf("Listening on %s", listen)
+	log.Errorf("Failed to listen on %s: %s", listen, s.ListenAndServe())
+}
+
+func requestHandler() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", prometheus.Handler())
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "OK", http.StatusOK)
+	})
+	mux.HandleFunc("/", http.NotFound)
+	return mux
 }
