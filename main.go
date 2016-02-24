@@ -17,7 +17,13 @@ import (
 	"github.com/danryan/env"
 )
 
-var deleted prometheus.Counter
+var (
+	deleted   prometheus.Counter
+	Name      = "es-maint-index"
+	Version   string
+	BuildTime string
+	Commit    string
+)
 
 type Config struct {
 	Host      string `env:"key=HOST default=localhost:9200" arg:"--host"`
@@ -73,6 +79,7 @@ func remove(c *Config) error {
 }
 
 func main() {
+	log.Infof("Starting %s version %s (build at %s from %s)", Name, Version, BuildTime, Commit)
 	cfg, err := New()
 	if err != nil {
 		log.Fatalf("Error: %s", err)
@@ -111,7 +118,7 @@ func main() {
 			return remove(cfg)
 		}
 		logFunc := func(err error, wait time.Duration) {
-			log.Printf("Failed to connect to ES: %s. Retry in %s", err, wait)
+			log.Printf("Failed to connect to ES at %s: %s. Retry in %s", cfg.URL(), err, wait)
 		}
 		bo := backoff.NewExponentialBackOff()
 		bo.InitialInterval = time.Second
