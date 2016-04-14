@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 )
+
+// the width of the left column
+const colWidth = 25
 
 // Fail prints usage information to stderr and exits with non-zero status
 func (p *Parser) Fail(msg string) {
@@ -27,7 +29,7 @@ func (p *Parser) WriteUsage(w io.Writer) {
 		}
 	}
 
-	fmt.Fprintf(w, "usage: %s", filepath.Base(os.Args[0]))
+	fmt.Fprintf(w, "usage: %s", p.config.Program)
 
 	// write the option component of the usage message
 	for _, spec := range options {
@@ -73,7 +75,17 @@ func (p *Parser) WriteHelp(w io.Writer) {
 	if len(positionals) > 0 {
 		fmt.Fprint(w, "\npositional arguments:\n")
 		for _, spec := range positionals {
-			fmt.Fprintf(w, "  %s\n", spec.long)
+			left := "  " + spec.long
+			fmt.Fprint(w, left)
+			if spec.help != "" {
+				if len(left)+2 < colWidth {
+					fmt.Fprint(w, strings.Repeat(" ", colWidth-len(left)))
+				} else {
+					fmt.Fprint(w, "\n"+strings.Repeat(" ", colWidth))
+				}
+				fmt.Fprint(w, spec.help)
+			}
+			fmt.Fprint(w, "\n")
 		}
 	}
 
@@ -84,11 +96,10 @@ func (p *Parser) WriteHelp(w io.Writer) {
 	}
 
 	// write the list of built in options
-	printOption(w, &spec{isBool: true, long: "help", short: "h", help: "display this help and exit"})
+	printOption(w, &spec{boolean: true, long: "help", short: "h", help: "display this help and exit"})
 }
 
 func printOption(w io.Writer, spec *spec) {
-	const colWidth = 25
 	left := "  " + synopsis(spec, "--"+spec.long)
 	if spec.short != "" {
 		left += ", " + synopsis(spec, "-"+spec.short)
@@ -102,12 +113,11 @@ func printOption(w io.Writer, spec *spec) {
 		}
 		fmt.Fprint(w, spec.help)
 	}
-	// Check if spec.dest is zero value or not
-	// If it isn't a default value have been added
+	// If spec.dest is not the zero value then a default value has been added.
 	v := spec.dest
 	if v.IsValid() {
 		z := reflect.Zero(v.Type())
-		if v.Interface() != z.Interface() {
+		if (v.Type().Comparable() && z.Type().Comparable() && v.Interface() != z.Interface()) || v.Kind() == reflect.Slice && !v.IsNil() {
 			fmt.Fprintf(w, " [default: %v]", v)
 		}
 	}
@@ -115,7 +125,7 @@ func printOption(w io.Writer, spec *spec) {
 }
 
 func synopsis(spec *spec, form string) string {
-	if spec.isBool {
+	if spec.boolean {
 		return form
 	}
 	return form + " " + strings.ToUpper(spec.long)

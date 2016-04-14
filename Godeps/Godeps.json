@@ -7,20 +7,21 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.8.7-53-g446d1c1",
-			"Rev": "446d1c146faa8ed3f4218f056fcd165f6bcfda81"
+			"Comment": "v0.10.0",
+			"Rev": "4b6ea7319e214d98c938f12692336f7ca9348d6b"
 		},
 		{
 			"ImportPath": "github.com/alexflint/go-arg",
-			"Rev": "ce5525d7767a3016c46f0f07e26a5db4b26372c1"
+			"Rev": "34b52501bde875853375c4e2b968a56b4168e790"
 		},
 		{
 			"ImportPath": "github.com/beorn7/perks/quantile",
-			"Rev": "b965b613227fddccbfffe13eae360ed3fa822f8d"
+			"Rev": "3ac7bf7a47d159a033b107610db8a1b6575507a4"
 		},
 		{
 			"ImportPath": "github.com/cenkalti/backoff",
-			"Rev": "4dc77674aceaabba2c7e3da25d4c823edfb73f99"
+			"Comment": "v1.0.0",
+			"Rev": "32cd0c5b3aef12c76ed64aaf678f6c79736be7dc"
 		},
 		{
 			"ImportPath": "github.com/danryan/env",
@@ -28,7 +29,7 @@
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "68415e7123da32b07eab49c96d2c4d6158360e9b"
+			"Rev": "dda510ac0fd43b39770f22ac6260eb91d377bce3"
 		},
 		{
 			"ImportPath": "github.com/matttproud/golang_protobuf_extensions/pbutil",
@@ -36,8 +37,8 @@
 		},
 		{
 			"ImportPath": "github.com/prometheus/client_golang/prometheus",
-			"Comment": "0.7.0-68-g67994f1",
-			"Rev": "67994f177195311c3ea3d4407ed0175e34a4256f"
+			"Comment": "0.7.0-74-g90c15b5",
+			"Rev": "90c15b5efa0dc32a7d259234e02ac9a99e6d3b82"
 		},
 		{
 			"ImportPath": "github.com/prometheus/client_model/go",
@@ -46,15 +47,15 @@
 		},
 		{
 			"ImportPath": "github.com/prometheus/common/expfmt",
-			"Rev": "56b90312e937d43b930f06a59bf0d6a4ae1944bc"
+			"Rev": "40456948a47496dc22168e6af39297a2f8fbf38c"
 		},
 		{
 			"ImportPath": "github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg",
-			"Rev": "56b90312e937d43b930f06a59bf0d6a4ae1944bc"
+			"Rev": "40456948a47496dc22168e6af39297a2f8fbf38c"
 		},
 		{
 			"ImportPath": "github.com/prometheus/common/model",
-			"Rev": "56b90312e937d43b930f06a59bf0d6a4ae1944bc"
+			"Rev": "40456948a47496dc22168e6af39297a2f8fbf38c"
 		},
 		{
 			"ImportPath": "github.com/prometheus/procfs",
@@ -62,17 +63,37 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "833a04a10549a95dc34458c195cbad61bbb6cb4d"
+			"Rev": "9eef40adf05b951699605195b829612bd7b69952"
 		},
 		{
 			"ImportPath": "gopkg.in/olivere/elastic.v2",
-			"Comment": "v2.0.24",
-			"Rev": "586f65f30d02b99cf9f3f7310b44be0bc77b5b6b"
+			"Comment": "v2.0.37",
+			"Rev": "a1c2a40393c7bd37cbf1663489a9041a59a6540a"
+		},
+		{
+			"ImportPath": "gopkg.in/olivere/elastic.v2/backoff",
+			"Comment": "v2.0.37",
+			"Rev": "a1c2a40393c7bd37cbf1663489a9041a59a6540a"
 		},
 		{
 			"ImportPath": "gopkg.in/olivere/elastic.v2/uritemplates",
-			"Comment": "v2.0.24",
-			"Rev": "586f65f30d02b99cf9f3f7310b44be0bc77b5b6b"
+			"Comment": "v2.0.37",
+			"Rev": "a1c2a40393c7bd37cbf1663489a9041a59a6540a"
+		},
+		{
+			"ImportPath": "gopkg.in/olivere/elastic.v3",
+			"Comment": "v3.0.30",
+			"Rev": "bff1355ba593686c7bfc1abb7a8573f34a9c29d1"
+		},
+		{
+			"ImportPath": "gopkg.in/olivere/elastic.v3/backoff",
+			"Comment": "v3.0.30",
+			"Rev": "bff1355ba593686c7bfc1abb7a8573f34a9c29d1"
+		},
+		{
+			"ImportPath": "gopkg.in/olivere/elastic.v3/uritemplates",
+			"Comment": "v3.0.30",
+			"Rev": "bff1355ba593686c7bfc1abb7a8573f34a9c29d1"
 		}
 	]
 }

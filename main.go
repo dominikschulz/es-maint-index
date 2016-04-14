@@ -11,7 +11,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/cenkalti/backoff"
 	"github.com/prometheus/client_golang/prometheus"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v3"
 
 	"github.com/alexflint/go-arg"
 	"github.com/danryan/env"
@@ -58,22 +58,25 @@ func remove(c *Config) error {
 	if err != nil {
 		return err
 	}
-	var victims []string
-	for _, iname := range in {
-		if strings.HasPrefix(iname, c.Prefix) {
-			victims = append(victims, iname)
+	for _, prefix := range strings.Split(c.Prefix, ",") {
+		var victims []string
+		for _, iname := range in {
+			if strings.HasPrefix(iname, prefix) {
+				victims = append(victims, iname)
+			}
 		}
-	}
-	sort.Strings(victims)
-	for i := len(victims) - (c.Retention + 1); i >= 0; i-- {
-		iname := victims[i]
-		_, err := client.DeleteIndex(iname).Do()
-		if err != nil {
-			log.Printf("Failed to delete index %s: %s", iname, err)
-			continue
+		sort.Strings(victims)
+		log.Debugf("Prefix: %s has %d indices. Retention is %d. Indices: %+v", prefix, len(victims), c.Retention, victims)
+		for i := len(victims) - (c.Retention + 1); i >= 0; i-- {
+			iname := victims[i]
+			_, err := client.DeleteIndex(iname).Do()
+			if err != nil {
+				log.Errorf("Failed to delete index %s: %s", iname, err)
+				continue
+			}
+			log.Infof("Deleted index %s", iname)
+			deleted.Inc()
 		}
-		log.Printf("Deleted index %s", iname)
-		deleted.Inc()
 	}
 	return nil
 }
