@@ -102,17 +102,31 @@ typedef struct user_pt_regs PtraceRegs;
 typedef struct pt_regs PtraceRegs;
 #elif defined(__mips__)
 typedef struct user PtraceRegs;
+#elif defined(__s390x__)
+typedef struct _user_regs_struct PtraceRegs;
 #else
 typedef struct user_regs_struct PtraceRegs;
+#endif
+
+#if defined(__s390x__)
+typedef struct _user_psw_struct ptracePsw;
+typedef struct _user_fpregs_struct ptraceFpregs;
+typedef struct _user_per_struct ptracePer;
+#else
+typedef struct {} ptracePsw;
+typedef struct {} ptraceFpregs;
+typedef struct {} ptracePer;
 #endif
 
 // The real epoll_event is a union, and godefs doesn't handle it well.
 struct my_epoll_event {
 	uint32_t events;
-#ifdef __ARM_EABI__
+#if defined(__ARM_EABI__) || defined(__aarch64__)
 	// padding is not specified in linux/eventpoll.h but added to conform to the
 	// alignment requirements of EABI
 	int32_t padFd;
+#elif defined(__powerpc64__) || defined(__s390x__)
+	int32_t _padFd;
 #endif
 	int32_t fd;
 	int32_t pad;
@@ -389,6 +403,13 @@ const SizeofInotifyEvent = C.sizeof_struct_inotify_event
 
 // Register structures
 type PtraceRegs C.PtraceRegs
+
+// Structures contained in PtraceRegs on s390x (exported by mkpost.go)
+type ptracePsw C.ptracePsw
+
+type ptraceFpregs C.ptraceFpregs
+
+type ptracePer C.ptracePer
 
 // Misc
 
