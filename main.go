@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"sort"
 	"strings"
@@ -53,6 +54,7 @@ func remove(c *Config, l log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("Failed to connect to ES: %s", err)
 	}
+	defer client.Stop()
 
 	in, err := client.IndexNames()
 	if err != nil {
@@ -165,22 +167,13 @@ func listen(l log.Logger) {
 	if listen == "" {
 		listen = ":8080"
 	}
-	s := &http.Server{
-		Addr:    listen,
-		Handler: requestHandler(),
-	}
-	l.Log("level", "info", "msg", "Listening", "listen", listen)
-	if err := s.ListenAndServe(); err != nil {
-		l.Log("level", "error", "msg", "Failed to listen", "listen", listen, "err", err)
-	}
-}
-
-func requestHandler() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", prometheus.Handler())
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/metrics", prometheus.Handler())
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "OK", http.StatusOK)
 	})
-	mux.HandleFunc("/", http.NotFound)
-	return mux
+	http.HandleFunc("/", http.NotFound)
+	l.Log("level", "info", "msg", "Listening", "listen", listen)
+	if err := http.ListenAndServe(listen, nil); err != nil {
+		l.Log("level", "error", "msg", "Failed to listen", "listen", listen, "err", err)
+	}
 }
