@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/olivere/elastic.v3"
@@ -46,16 +46,7 @@ func (c *Config) URL() string {
 	return fmt.Sprintf("http://%s", c.Host)
 }
 
-func remove(c *Config, l log.Logger) error {
-	client, err := elastic.NewClient(
-		elastic.SetURL(c.URL()),
-		elastic.SetMaxRetries(10),
-	)
-	if err != nil {
-		return fmt.Errorf("Failed to connect to ES: %s", err)
-	}
-	defer client.Stop()
-
+func remove(client *elastic.Client, c *Config, l log.Logger) error {
 	in, err := client.IndexNames()
 	if err != nil {
 		return fmt.Errorf("Failed to list indices: %s", err)
@@ -69,7 +60,7 @@ func remove(c *Config, l log.Logger) error {
 			}
 		}
 		sort.Strings(victims)
-		l.Log("level", "debug", "msg", "Prefix Status", "prefix", prefix, "num_victims", len(victims), "retention", c.Retention, "victims", victims)
+		l.Log("level", "debug", "msg", "Prefix Status", "prefix", prefix, "num_victims", len(victims), "retention", c.Retention, "victims", strings.Join(victims, ","))
 		for i := len(victims) - (c.Retention + 1); i >= 0; i-- {
 			iname := victims[i]
 			_, err := client.DeleteIndex(iname).Do()
@@ -79,6 +70,7 @@ func remove(c *Config, l log.Logger) error {
 			}
 			l.Log("level", "info", "msg", "Deleted index", "index", iname)
 			deleted.Inc()
+			time.Sleep(30 * time.Second)
 		}
 	}
 	return nil
@@ -131,20 +123,21 @@ func main() {
 
 	go listen(logger)
 
+	time.Sleep(time.Duration(rand.Int31n(30)) * time.Second)
+
+	client, err := elastic.NewClient(
+		elastic.SetURL(cfg.URL()),
+		elastic.SetMaxRetries(10),
+	)
+	if err != nil {
+		logger.Log("level", "error", "msg", "Failed to create new ES client", "err", err)
+		os.Exit(1)
+	}
+
 	interval := time.Hour * time.Duration(cfg.Interval)
 	for {
 		t0 := time.Now()
-		opFunc := func() error {
-			return remove(cfg, logger)
-		}
-		logFunc := func(err error, wait time.Duration) {
-			logger.Log("level", "warn", "msg", "Failed to connect to ES", "url", cfg.URL(), "err", err, "wait", wait)
-		}
-		bo := backoff.NewExponentialBackOff()
-		bo.InitialInterval = time.Second
-		bo.MaxInterval = 60 * time.Second
-		bo.MaxElapsedTime = 15 * time.Minute
-		err := backoff.RetryNotify(opFunc, bo, logFunc)
+		err := remove(client, cfg, logger)
 		if err != nil {
 			runs.WithLabelValues("failed").Inc()
 			logger.Log("level", "error", "msg", "Failed to delete indices", "err", err)
@@ -159,6 +152,7 @@ func main() {
 		logger.Log("level", "info", "msg", "Waiting until next run", "interval", interval.String())
 		time.Sleep(interval)
 	}
+	client.Stop()
 	os.Exit(0)
 }
 
