@@ -1,22 +1,12 @@
-FROM golang:1.6-alpine
-MAINTAINER Dominik Schulz <dominik.schulz@gauner.org>
+FROM golang:1.8-alpine3.6 as builder
 
-RUN apk --update add \
-  ca-certificates \
-  curl \
-  git \
-  make \
-  && rm -rf /var/cache/apk/*
-
-ENV GOPATH /go
-ENV GOBIN $GOPATH/bin
-ENV PATH $GOBIN:$PATH
-
-RUN mkdir -p "$GOPATH/src" "$GOBIN" && chmod -R 777 "$GOPATH"
-
-ADD .   /go/src/github.com/dominikschulz/es-maint-index
+ADD . /go/src/github.com/dominikschulz/es-maint-index
 WORKDIR /go/src/github.com/dominikschulz/es-maint-index
 
-RUN make install
+RUN go install
 
-CMD [ "/go/bin/es-maint-index" ]
+FROM alpine:3.6
+
+COPY --from=builder /go/bin/es-maint-index /usr/local/bin/es-maint-index
+CMD [ "/usr/local/bin/es-maint-index" ]
+EXPOSE 8080
